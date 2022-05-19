@@ -2,7 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
+use App\Http\Requests\ProductRequest;
+use App\Http\Resources\ProductResource;
+use PhpParser\Node\Expr\Throw_;
+use PhpParser\Node\Stmt\TryCatch;
+use Throwable;
 
 class ProductController extends Controller
 {
@@ -13,7 +19,21 @@ class ProductController extends Controller
      */
     public function index()
     {
-        //
+        try{
+            $allProducts = Product::with('category')->orderBy('created_at', 'DESC')->get();
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Success!',
+                'data' => ProductResource::collection($allProducts)
+            ]);
+        }catch(Throwable $e){
+            return response()->json([
+                'status_code'=>200,
+                'message'=> 'No product available yet',
+                'data'=>$e->getMessage()
+            ]);
+        }
+
     }
 
     /**
@@ -22,9 +42,32 @@ class ProductController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(ProductRequest $request)
     {
-        //
+        $validatedProductData = $request->validated();
+
+        try{
+            if(request()->hasFile('image')){
+                $name = 'image_'.time().'.'.request()->image->getClientOriginalName();
+                $storedImagePath = request()->file('image')->storeAs('public/images', $name);
+                $validatedProductData['image'] = $name;
+            }
+
+            $createdProductData = Product::create($validatedProductData);
+
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Your product has been saved successfully',
+                'data' => new ProductResource($createdProductData)
+            ]);
+
+        }catch(Throwable $e){
+            return response()->json([
+                'status_code' => 422,
+                'message' => $e->getMessage()
+            ]);
+        }
+
     }
 
     /**
@@ -35,7 +78,21 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        //
+        try{
+            $findProductById = Product::findOrFail($id);
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Success!',
+                'data' => new ProductResource($findProductById)
+            ]);
+
+        }catch(Throwable $e){
+            return response()->json([
+                'status_code' => 404,
+                'message' => 'Not found',
+            ]);
+        }
+
     }
 
     /**
@@ -45,9 +102,28 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(ProductRequest $request, $id)
     {
-        //
+        dd('Update');
+        //$validatedProductData = $request->validated();
+
+        try{
+            $findProductById = Product::findOrFail($id);
+            if(request()->hasFile('image')){
+                $name = 'image_'.time().'.'.request()->image->getClientOriginalName();
+                $storedImagePath = request()->file('image')->storeAs('public/images', $name);
+                $validatedProductData['image'] = $name;
+            }
+
+            $findProductById->update($validatedProductData);
+
+        }catch(Throwable $e){
+           return response()->json([
+                'status_code' => 500,
+                'message' => 'Product update failed',
+                'data' => $e->getMessage()
+           ]);
+        }
     }
 
     /**
@@ -58,6 +134,19 @@ class ProductController extends Controller
      */
     public function destroy($id)
     {
-        //
+        try{
+            $findProductById = Product::findOrFail($id);
+            $findProductById->delete();
+            return response()->json([
+                'status_code' => 200,
+                'message' => 'Product deleted successfully'
+            ]);
+
+        }catch(Throwable $e){
+            return response()->json([
+                'status_code' => 404,
+                'message'=> 'Product not found'
+            ]);
+        }
     }
 }
