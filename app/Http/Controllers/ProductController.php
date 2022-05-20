@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Requests\ProductRequest;
+use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
+use App\Models\ProductCategory;
 use PhpParser\Node\Expr\Throw_;
 use PhpParser\Node\Stmt\TryCatch;
 use Throwable;
@@ -104,10 +106,8 @@ class ProductController extends Controller
      */
     public function update(ProductRequest $request, $id)
     {
-        dd('Update');
-        //$validatedProductData = $request->validated();
-
         try{
+            $validatedProductData = $request->validated();
             $findProductById = Product::findOrFail($id);
             if(request()->hasFile('image')){
                 $name = 'image_'.time().'.'.request()->image->getClientOriginalName();
@@ -116,6 +116,11 @@ class ProductController extends Controller
             }
 
             $findProductById->update($validatedProductData);
+            return response()->json([
+                'status_code' => 201,
+                'message' => 'Product updated successfully.',
+                'data' => new ProductResource($findProductById)
+            ]);
 
         }catch(Throwable $e){
            return response()->json([
