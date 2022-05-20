@@ -26,7 +26,7 @@ class ProductController extends Controller
             return response()->json([
                 'status_code' => 200,
                 'message' => 'Success!',
-                'data' => ProductResource::collection($allProducts)
+                'data' => ProductResource::collection($allProducts),
             ]);
         }catch(Throwable $e){
             return response()->json([
@@ -109,6 +109,7 @@ class ProductController extends Controller
         try{
             $validatedProductData = $request->validated();
             $findProductById = Product::findOrFail($id);
+
             if(request()->hasFile('image')){
                 $name = 'image_'.time().'.'.request()->image->getClientOriginalName();
                 $storedImagePath = request()->file('image')->storeAs('public/images', $name);
@@ -116,6 +117,7 @@ class ProductController extends Controller
             }
 
             $findProductById->update($validatedProductData);
+
             return response()->json([
                 'status_code' => 201,
                 'message' => 'Product updated successfully.',
